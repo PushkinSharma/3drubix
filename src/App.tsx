@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { RubiksCubeScene } from "./components/RubiksCubeScene";
 import {
   applyMove,
-  applyMoves,
   createScrambleMoves,
   createSolvedCube,
   isSolved,
@@ -27,31 +26,57 @@ const KEY_TO_MOVE: Record<string, { forward: Move; reverse: Move }> = {
   b: { forward: "B", reverse: "B'" },
 };
 
+const NORMAL_TURN_MS = 220;
+const QUEUE_TURN_MS = 130;
+
 export default function App() {
   const [cubies, setCubies] = useState(createSolvedCube);
+  const [moveQueue, setMoveQueue] = useState<Move[]>([]);
+  const [animatingMove, setAnimatingMove] = useState<Move | null>(null);
   const [lastMoves, setLastMoves] = useState<Move[]>([]);
-  const [activeMove, setActiveMove] = useState<Move | null>(null);
   const [snapVersion, setSnapVersion] = useState(0);
-  const solved = isSolved(cubies);
+  const solved = isSolved(cubies) && !animatingMove && moveQueue.length === 0;
+  const queuedAhead = moveQueue.length + (animatingMove ? 1 : 0);
+  const animationDurationMs =
+    queuedAhead > 1 ? QUEUE_TURN_MS : NORMAL_TURN_MS;
 
-  function runMove(move: Move) {
+  useEffect(() => {
+    if (animatingMove !== null || moveQueue.length === 0) {
+      return;
+    }
+
+    const [next, ...rest] = moveQueue;
+    setAnimatingMove(next);
+    setMoveQueue(rest);
+  }, [animatingMove, moveQueue]);
+
+  function enqueueMoves(moves: Move[]) {
+    if (moves.length === 0) {
+      return;
+    }
+
+    setMoveQueue((current) => [...current, ...moves]);
+    setLastMoves((current) => [...current, ...moves].slice(-16));
+  }
+
+  function enqueueMove(move: Move) {
+    enqueueMoves([move]);
+  }
+
+  function handleMoveAnimationComplete(move: Move) {
     setCubies((current) => applyMove(current, move));
-    setLastMoves((current) => [...current, move].slice(-16));
-    setActiveMove(move);
+    setAnimatingMove(null);
   }
 
   function resetCube() {
+    setMoveQueue([]);
+    setAnimatingMove(null);
     setCubies(createSolvedCube());
     setLastMoves([]);
-    setActiveMove(null);
   }
 
   function scrambleCube() {
-    const moves = createScrambleMoves(20);
-
-    setCubies((current) => applyMoves(current, moves));
-    setLastMoves(moves.slice(-16));
-    setActiveMove(moves.at(-1) ?? null);
+    enqueueMoves(createScrambleMoves(20));
   }
 
   function snapView() {
@@ -79,7 +104,7 @@ export default function App() {
         event.preventDefault();
         const move = event.shiftKey ? mapping.reverse : mapping.forward;
 
-        runMove(move);
+        enqueueMove(move);
         return;
       }
 
@@ -109,7 +134,9 @@ export default function App() {
 
           <RubiksCubeScene
             cubies={cubies}
-            highlightedMove={activeMove}
+            animatingMove={animatingMove}
+            animationDurationMs={animationDurationMs}
+            onMoveAnimationComplete={handleMoveAnimationComplete}
             snapVersion={snapVersion}
           />
 
@@ -143,15 +170,17 @@ export default function App() {
               <div className="move-pair" key={pair.forward}>
                 <button
                   type="button"
-                  className={activeMove === pair.forward ? "active-button" : undefined}
-                  onClick={() => runMove(pair.forward)}
+                  className={
+                    animatingMove === pair.forward ? "active-button" : undefined
+                  }
+                  onClick={() => enqueueMove(pair.forward)}
                 >
                   {pair.forward}
                 </button>
                 <button
                   type="button"
-                  className={`ghost-button ${activeMove === pair.reverse ? "active-button" : ""}`.trim()}
-                  onClick={() => runMove(pair.reverse)}
+                  className={`ghost-button ${animatingMove === pair.reverse ? "active-button" : ""}`.trim()}
+                  onClick={() => enqueueMove(pair.reverse)}
                 >
                   {pair.reverse}
                 </button>
@@ -159,7 +188,10 @@ export default function App() {
             ))}
           </div>
 
-          <p className="control-hint">Keys: U D L R F B, Shift + key, 0 to snap.</p>
+          <p className="control-hint">
+            Keys: U D L R F B, Shift + key, 0 to snap. Turns queue while one is
+            animating.
+          </p>
         </aside>
       </section>
     </main>

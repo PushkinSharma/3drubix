@@ -1,78 +1,79 @@
 # 3dRubix
 
-An MVP scaffold for a browser-based Rubik's Cube experience that can grow into a multiplayer puzzle game.
+A playable 3×3 Rubik’s Cube in the browser. Drag to look around, turn faces with buttons or the keyboard, scramble, and reset.
 
-## Recommended stack
+Built with React, TypeScript, Vite, and Three.js.
 
-- `React + TypeScript`: fast UI iteration and a clean component model.
-- `Vite`: the simplest modern frontend setup for local development.
-- `three` + `@react-three/fiber` + `@react-three/drei`: browser 3D rendering, camera controls, and scene helpers without building a game engine from scratch.
+**Live demo:** [pushkinsharma.github.io/3drubix](https://pushkinsharma.github.io/3drubix/)
 
-## Why this stack fits your experience level
+## Try it locally
 
-If you are new to 3D projects, the most forgiving path is **web-first 3D**, not Unity or Unreal.
+```bash
+npm install
+npm run dev
+```
 
-- You stay in familiar frontend tooling.
-- You can ship an MVP in the browser quickly.
-- Multiplayer later is easier because the game state can be shared as move events over WebSockets.
+Open the URL Vite prints (usually `http://localhost:5173`).
 
-## How the 3D modelling will be done
+| Command | What it does |
+|---------|----------------|
+| `npm run dev` | Local development server |
+| `npm run build` | Type-check and production build → `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm test` | Run cube logic unit tests |
 
-For the MVP, do **procedural modelling in code** instead of making a detailed model in Blender.
+Needs a recent Node.js (Vite 7).
 
-- The cube is built from 27 smaller cubies.
-- Each cubie has sticker colors assigned to visible faces.
-- Rotations update cubie positions and sticker orientation in code.
-- Camera orbit gives the "swipe in 360 degrees" experience.
-- Face-turn buttons are a temporary control mechanism until we add in-scene arrows or touch gestures.
+## How to play
 
-This is the right choice because a Rubik's Cube is mostly logic and interaction, not complex artistic modelling.
+| Action | How |
+|--------|-----|
+| Orbit the camera | Drag on the cube |
+| Turn a face | Click `U` `D` `L` `R` `F` `B` (or the primed buttons) |
+| Reverse a turn | Hold **Shift** + the same key, or click the `'` button |
+| Scramble | **Scramble** (20 random moves, animated in sequence) |
+| Reset to solved | **Reset** |
+| Reset camera | **Snap view** or press `0` |
 
-## Multiplayer direction after MVP
+Face letters: **U**p, **D**own, **L**eft, **R**ight, **F**ront, **B**ack. Turns queue if you click while one is still animating.
 
-When the solo prototype feels good, add:
+## What’s in the box
 
-- `Socket.IO` or `Colyseus` for rooms and synchronized moves.
-- A shared cube state on the server.
-- Timers, matchmaking, leaderboards, and race modes.
+- Procedural 3D cube (27 cubies, sticker colors)
+- Smooth face-turn animations with a move queue
+- Correct face-turn logic for all 12 basic moves
+- Scramble + reset
+- Move history and solved / in-progress status
+- Orbit camera with snap-to-default view
+- Unit tests for cube math (`npm test`)
 
-The clean boundary is:
+Cube math lives in `src/lib/cube.ts`. The 3D scene is in `src/components/RubiksCubeScene.tsx`. UI and controls are in `src/App.tsx`.
 
-- client: rendering, input, animations
-- server: room state, authoritative move stream, game rules
+## Not done yet
 
-## Getting started
+Useful next steps:
 
-1. Install dependencies:
+1. **Drag / touch to turn faces** — today turns are buttons and keys only
+2. **Timer and move counter**
+3. **Undo**
 
-   ```bash
-   npm install
-   ```
+Multiplayer (shared rooms, race modes) is a later idea once solo play feels solid.
 
-2. Start the app:
+## Project layout
 
-   ```bash
-   npm run dev
-   ```
+```
+src/
+  App.tsx                      # Controls, move queue, app state
+  components/RubiksCubeScene.tsx
+  lib/cube.ts                  # Moves, scramble, solved check
+  lib/cube.test.ts
+  styles.css
+```
 
-3. Build for production:
+## License
 
-   ```bash
-   npm run build
-   ```
+MIT — see [LICENSE](LICENSE).
 
-## Current scaffold includes
+## Contributing
 
-- Vite + React + TypeScript project setup
-- 3D cube scene with orbit controls
-- Deterministic cube move logic
-- Face rotation buttons for MVP gameplay
-- Scramble and reset controls
-
-## Next recommended steps
-
-1. Add smooth turn animations instead of instant state swaps.
-2. Replace buttons with face arrows and drag gestures.
-3. Add a timer and move counter.
-4. Extract cube state into a store for replay and multiplayer sync.
-5. Add a Node.js realtime server once the solo gameplay feels right.
+Issues and PRs are welcome. Keep changes focused; timer, undo, or face drag gestures are clear wins.

@@ -22,7 +22,7 @@ export type Move =
   | "B"
   | "B'";
 
-type Axis = "x" | "y" | "z";
+export type Axis = "x" | "y" | "z";
 
 type Vector3 = {
   x: number;
@@ -30,9 +30,10 @@ type Vector3 = {
   z: number;
 };
 
-type RotationSpec = {
+export type MoveRotation = {
   axis: Axis;
   layer: -1 | 0 | 1;
+  /** Quarter-turns using the right-hand rule (+1 = 90° around the axis). */
   turns: -1 | 1;
 };
 
@@ -73,7 +74,7 @@ const FACE_COLORS: Record<Direction, StickerColor> = {
   nz: "blue",
 };
 
-const MOVE_TO_ROTATION: Record<Move, RotationSpec> = {
+const MOVE_TO_ROTATION: Record<Move, MoveRotation> = {
   U: { axis: "y", layer: 1, turns: -1 },
   "U'": { axis: "y", layer: 1, turns: 1 },
   D: { axis: "y", layer: -1, turns: 1 },
@@ -231,6 +232,10 @@ export function getMoveFace(move: Move): Direction {
   return MOVE_FACE_BY_LETTER[move[0] as FaceInfo["notation"]];
 }
 
+export function getMoveRotation(move: Move): MoveRotation {
+  return MOVE_TO_ROTATION[move];
+}
+
 export function getFaceInfoForMove(move: Move): FaceInfo {
   return FACE_INFO[getMoveFace(move)];
 }
@@ -239,6 +244,13 @@ export function isCubieInMoveLayer(cubie: Cubie, move: Move): boolean {
   const rotation = MOVE_TO_ROTATION[move];
 
   return cubie.position[rotation.axis] === rotation.layer;
+}
+
+/** Inverse of a face turn (U ↔ U', etc.). */
+export function invertMove(move: Move): Move {
+  return move.endsWith("'")
+    ? (move.slice(0, -1) as Move)
+    : (`${move}'` as Move);
 }
 
 function rotateDirection(
